@@ -20,12 +20,9 @@ res_df['Nearest Neighbor'] = (df['NearestNeighbor'] - df['BranchBound'])/ df['Br
 
 fig = res_df.plot(
 	title = "Percent Error from optimial Solution",
-	labels = dict(index = "Number of Cities", value = "Percent", 	variable = "Series"),
+	labels = dict(index = "Number of Cities", value = "Error", 	variable = "Series"),
 )
-fig.write_html(
-	'./figures/prelim_dist_figure.html',
-	auto_open=True
-	)
+fig.update_yaxes(tickprefix="%")
 fig.write_image("figures/prelim_dist_figure.png")
 
 
@@ -38,13 +35,10 @@ res_df = (-df['AntColony'] + df['NearestNeighbor']) /((df['AntColony'] + df['Nea
 print(df.columns)
 
 fig = res_df.plot(
-	title = "Distance of Nearest Nieghbor Solution vs Ant Colony",
-	labels = dict(index = "Number of Cities", value = "Percent difference of distances", 	variable = ""),
+	title = "Distance of Nearest Neighbor distance vs Ant Colonoy",
+	labels = dict(index = "Number of Cities", value = "Difference of distances", 	variable = "Nearest Neighbor"),
 )
-fig.write_html(
-	'./figures/total_dist_figure.html',
-	auto_open=True
-	)
+fig.update_yaxes(tickprefix="%")
 fig.write_image("figures/total_dist_figure.png")
 
 
@@ -54,8 +48,5 @@ fig = df.plot(
 	title = "Time to Find Solution",
 	labels = dict(index = "Number of Cities", value = "Million CPU cycles", 	variable = "Any Colony"),
 )
-fig.write_html(
-	'./figures/total_time_figure.html',
-	auto_open=True
-	)
+fig.update_yaxes(tickprefix="%")
 fig.write_image("figures/total_time.png")
