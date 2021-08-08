@@ -12,7 +12,7 @@ with a close upper bound is too unpredictable on its computation time as you nev
 hence in the general case Branch and Bound also becomes untenable around 11 cities.
 
 <img src="./figures/prelim_dist_figure.png"
-alt="" width="800" height="600" />
+alt="" width="600" height="400" />
 
 Above gives a baseline how close both methods are to the optimal solution for 10 cities max.
 
@@ -23,10 +23,10 @@ Both the Ant Colony and Nearest Neighbor are used to find the shortest tour and 
 of cities. Note that the parameters the Ant Colony we purposefully not optimized to cap computation costs.
 
 <img src="./figures/total_dist_figure.png"
-alt="" width="800" height="600" />
+alt="" width="600" height="400" />
 
 <img src="./figures/total_time.png"
-alt="" width="800" height="600" />
+alt="" width="600" height="400" />
 
 We can see that Nearest Neighbor on average gives a longer path for the trade off of taking a much shorter time to compute. Note
 that Nearest Neighbor on average doesn't go more than 10% higher than the Ant Colony Result. We Can conclude that Ant Colony
