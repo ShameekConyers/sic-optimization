@@ -19,13 +19,14 @@
 		std::vector<Ant> m_ants;
 		std::mt19937 m_rng;
 		int m_num_ants;
+		int m_num_steps;
 
 */
 
 float PHER_PARAM = 0.9;
-float DIST_PARAM = 2;
+float DIST_PARAM = 2.0;
 
-float PHER_DECA = 0.3;
+float PHER_DECA = 0.25;
 
 
 
@@ -45,9 +46,18 @@ Env::Env(int num_nodes, int num_ants, int num_steps)
 	m_rng{},
 	m_num_steps{ num_steps }
 {
-	//preliminary setup
-	m_rng.seed(1);
-	std::uniform_real_distribution dist(0.0, 10.0);
+	//preliminary rng setup
+	std::random_device rd;
+	std::uniform_int_distribution rd_dist(0, 10000);
+	m_rng.seed(rd_dist(rd)); // random seed, replace with constant if necessary
+
+	std::uniform_real_distribution midpoint_dist(10.0, 20.0);
+	std::uniform_real_distribution bounds_dist(0.0, 20.0);
+
+
+	float lb = fmax(0.0, midpoint_dist(m_rng) - bounds_dist(m_rng));
+	float ub = midpoint_dist(m_rng) + bounds_dist(m_rng);
+	std::uniform_real_distribution dist(lb, ub);
 	m_ref_graph.reserve(m_num_nodes);
 	m_graph.reserve(m_num_nodes* m_num_nodes);
 
@@ -59,7 +69,7 @@ Env::Env(int num_nodes, int num_ants, int num_steps)
 
 	}
 
-	// calc distances with initial pheromone vals of 0
+	// calc distances with initial pheromone vals of 1
 	for (int i = 0; i < m_num_nodes; i++) {
 		for (int j = 0; j < m_num_nodes; j++) {
 			auto [ixpos, iypos] = m_ref_graph[i];
@@ -70,7 +80,7 @@ Env::Env(int num_nodes, int num_ants, int num_steps)
 			ypos = ypos * ypos;
 
 
-			m_graph.push_back({ sqrtf(xpos + ypos), 0.5 });
+			m_graph.push_back({ sqrtf(xpos + ypos), 1.0 });
 		}
 	}
 
@@ -470,7 +480,7 @@ float Env::calculatePred(int from, int to)
 	auto [dist, pher] = getVal(from, to);
 	dist = powf((1 / dist), DIST_PARAM);
 	pher = powf(pher, PHER_PARAM);
-	if (isnan(pher)) return 1e-9;
-	if (isnan(dist)) return 1e-9;
+	if (isnan(pher)) return 1e-5;
+	if (isnan(dist)) return 1e-5;
 	return (dist * pher);
 }
