@@ -1,9 +1,20 @@
 cmake_minimum_required(VERSION 3.20.1)
 
 set(CMAKE_CXX_STANDARD 20)
+find_package(Catch2 REQUIRED)
 
-project(sic_tsp VERSION 0.1.0)
+enable_testing()
 
-add_executable(sic_tsp)
-target_sources(sic_tsp PRIVATE src/main.cpp src/Env.cpp)
-add_compile_options(-O3)
+project(sic_optim VERSION 0.1.0)
+
+add_executable(sic_optim)
+add_executable(sic_optim_test)
+target_sources(sic_optim PRIVATE src/Utils.cpp src/main.cpp
+	src/Env.cpp src/AntSystem.cpp src/NearestNeighbor.cpp src/ExactAlgorithms.cpp
+	src/AntColonySystem.cpp)
+target_sources(sic_optim_test PRIVATE src/Utils.cpp tests/main_test.cpp
+	src/Env.cpp src/AntSystem.cpp src/NearestNeighbor.cpp src/ExactAlgorithms.cpp
+	src/AntColonySystem.cpp)
+
+add_test(NAME sic_optim_test COMMAND sic_optim_test)
+set(CMAKE_CXX_FLAGS "-O3")

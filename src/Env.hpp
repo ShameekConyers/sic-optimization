@@ -1,76 +1,152 @@
 #pragma once
 
-#include <unordered_map>
-#include <utility>
-#include <set>
 #include <vector>
+#include <utility>
 #include <random>
+#include <set>
+#include <memory>
+#include <string>
+#include "Utils.hpp"
 
+class Timer;
 
-class Ant {
-public:
-	Ant(int init_pos);
-
-	std::set<std::pair<int, int>> m_visited; // clear this after every loop iteration
-	int m_pos;
-};
-
-class EnvNode {
-public:
-	int x;
-	int y; //X and y coords
-
-};
-
-class MappedEnv {
-
-	// Key: (Node1, Node2) ... Value: Cost
-	std::unordered_map<
-		std::set<EnvNode, EnvNode>,
-		std::pair<float, float>>
-		m_graph;
-};
-
+// Allows the interface for algorithms to interact with
 class Env {
 public:
-	Env(int num_nodes, int num_ants, int num_steps);
+	Env();
 
-	//returns (Dist, Pheromone) for graph
-	std::pair<float, float> getVal(int i, int j);
-	void setVal(int i, int j,
-		std::pair<float, float> val);
+	// give env shape and seed env
+	void initialize_env(int num_nodes, int seed = -1, int num_orders = -1);
 
-	void runACLoop();
-	std::vector<std::pair<int, int>> generateACO();
-	float getACDist();
-	float getBruteForceDist();
-	float getBruteForceDistBFS(std::set<int>& to_visit, int cur_node);
-	float getNNDist(bool complex = true);
-	float getOneAheadNNDist(bool complex = true);
-	float getBBDist(float upper_bound_hint = 0.0);
-	float getBBDistDFS(std::set<int>& to_visit, float ub, int cur_node);
-	std::vector<std::pair<float, float>> getRefGraph();
+	//used when number of steps known ahead of time
+	void run_loop(int num_steps);
+
+	//used when the number of steps is unknown, steps once.
+	void step_env();
+
+	// returns (obj dist, heur dist)  between node i from node j
+	std::pair<double, double> get_val(int i, int j);
+
+	// sets the weighted edge for have (distance, heuristic)
+	void set_val(int i, int j, std::pair<double, double> new_val);
+
+	// gets the heuristic between i and j
+	double get_heuristic(int i, int j);
+
+	// sets the weighted edge to have a heuristic
+	void set_heuristic(int i, int j, double new_heuristic_value);
+
+	//returns a reference to the coord graph, mutation not reccomended.
+	std::vector<double>& get_ref_graph();
+
+	//returns a reference to the dist graph, mutation not reccomended.
+	std::vector<double>& get_graph();
+
+	// clears the envs state, doesn't reinit env
+	void clear_env();
+
+	// resarts env with the same state it was initialized with
+	void reset_env();
+
+	// returns the performance given the path in nodes to follow.
+	double get_path_distance(std::vector<int> path);
+
+	// returns the (pickup, delivery) node locations as a nested vector of pairs
+	std::vector<std::pair<int, int>>& get_orders();
+
+	// returns stride
+	int get_stride();
+
+	// returns nodes
+	int get_num_nodes();
+
+	// returns the rng
+	std::mt19937& get_rng();
 
 private:
-	void processACState(); //make each ant pick
-	void updateACState(); //update pheromones
-	float calculatePred(int from, int to);
+	// utility
+	std::mt19937 m_rng;
 
+	// Loop helpers
+	void process_state();
+	void update_state();
+	void generate_output();
 
+	//flat vector which holds the original (X, Y) graph with stride 2
+	std::vector<double> m_ref_graph;
 
-	//flat map where m_ref_graph contains the  (X, Y) coord
-	// m_graph contains the precomputed distance and pheromone levels
-	// m_probabilies contain the state change probabilites
-	std::vector<
-		std::pair<float, float>> m_ref_graph;
-	std::vector<
-		std::pair<float, float>> m_graph;
+	//flat vector which holds the (obj dist, heur dist) graph, has stride 2
+	std::vector<double> m_graph;
+
+	// edge pair-vector which holds the (pickup, delivery) locations
+	std::vector<std::pair<int, int>> m_orders;
+
+	// number of nodes in fully connecteted graph
 	int m_num_nodes;
 
-	//collection of ants
-	std::vector<Ant> m_ants;
 
-	//utility
-	std::mt19937 m_rng;
-	int m_num_steps;
+	// number of times you need to move until new node, const for now
+	const int m_stride = 2;
+
+
+};
+
+class EnvHeuristic {
+public:
+	EnvHeuristic(
+		Env& env, std::string name
+	)
+		: m_env{ &env },
+		m_timer{},
+		m_num_nodes{},
+		m_name{ name }
+	{
+		m_env->reset_env();
+		m_num_nodes = m_env->get_num_nodes();
+	}
+
+	virtual std::vector<int> get_path()
+	{
+		return {};
+	}
+
+	std::pair<double, double> get_performance()
+	{
+		m_timer.set_timer();
+		double distance = m_env->get_path_distance(get_path());
+		double time = m_timer.get_timer();
+		return { distance, time };
+	}
+
+	/**
+	 * @brief Get the results object
+	 *
+	 * @return A tuple of (num_nodes, name, (dist, time))
+	 */
+	virtual std::tuple<int, std::string, std::pair<double, double>> get_results()
+	{
+		return { m_num_nodes, m_name, get_performance() };
+	}
+
+protected:
+	Env* m_env;
+	int m_num_nodes;
+	std::string m_name;
+	Timer m_timer;
+};
+
+
+// class driver for the Simulated Annealing algorithm
+class SimulatedAnnealing {
+
+};
+
+// class driver for the Genetic algorithm
+class GeneticAlgorithm {
+
+};
+
+// class driver for the Swarm algorithm
+class ParticleSwarm {
+
 };

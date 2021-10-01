@@ -1,486 +1,213 @@
 #include "Env.hpp"
-#include <iostream>
 #include <cassert>
-#include <map>
-#include <string>
-#include <math.h>
-#include <stack>
-/*
-	Ant:
-		std::set<int> m_visited;
-		int m_pos;
 
-	Env:
-		std::vector<
-			std::pair<float, float>> m_ref_graph;
-		std::vector<
-			std::pair<float, float>> m_graph;
-		int m_num_nodes;
-		std::vector<Ant> m_ants;
-		std::mt19937 m_rng;
-		int m_num_ants;
-		int m_num_steps;
+#include <iostream>
+/*
+	flat vector which holds the original (X, Y) graph with stride 2
+	std::vector<double> m_ref_graph;
+
+	flat vector which holds the (obj dist, heur dist) graph, has stride 2
+	std::vector<double> m_graph;
+
+	number of nodes in fully connected graph
+	int m_num_nodes;
+
+	number of times you need to move until new node, const for now
+	const int m_stride = 2;
+
+	utility
+	std::mt19937 m_rng;
 
 */
 
-float PHER_PARAM = 0.9;
-float DIST_PARAM = 2.0;
 
-float PHER_DECA = 0.25;
+Env::Env()
+	: m_ref_graph{}, m_graph{}, m_num_nodes{ 0 }, m_stride{ 2 }, m_rng{}
 
-
-
-
-Ant::Ant(int init_pos)
-	: m_visited{},
-	m_pos{ init_pos }
 {
 
 }
 
-Env::Env(int num_nodes, int num_ants, int num_steps)
-	: m_ref_graph{},
-	m_graph{},
-	m_num_nodes{ num_nodes },
-	m_ants{},
-	m_rng{},
-	m_num_steps{ num_steps }
+void Env::initialize_env(int num_nodes, int seed, int num_orders)
 {
-	//preliminary rng setup
-	std::random_device rd;
-	std::uniform_int_distribution rd_dist(0, 10000);
-	m_rng.seed(rd_dist(rd)); // random seed, replace with constant if necessary
-
-	std::uniform_real_distribution midpoint_dist(10.0, 20.0);
-	std::uniform_real_distribution bounds_dist(0.0, 20.0);
-
-
-	float lb = fmax(0.0, midpoint_dist(m_rng) - bounds_dist(m_rng));
-	float ub = midpoint_dist(m_rng) + bounds_dist(m_rng);
-	std::uniform_real_distribution dist(lb, ub);
-	m_ref_graph.reserve(m_num_nodes);
-	m_graph.reserve(m_num_nodes* m_num_nodes);
-
-	//Init ref graph with random pair of (X, Y)
-	for (int i = 0; i < m_num_nodes; i++) {
-		float xpos = dist(m_rng);
-		float ypos = dist(m_rng);
-		m_ref_graph.push_back({ xpos, ypos });
+	m_num_nodes = num_nodes;
+	if (seed == -1) {
+		// gives random seed if one isn't provided
+		std::random_device rd_seed;
+		std::uniform_int_distribution rd_seed_distr(0, 100'000'000);
+		seed = rd_seed_distr(rd_seed);
 
 	}
+	m_rng.seed(seed);
+	m_ref_graph.reserve(m_stride * num_nodes);
+	m_graph.reserve(m_stride * num_nodes * num_nodes);
 
-	// calc distances with initial pheromone vals of 1
+
+	//constructs random coordinates for our graph, assume uniform distribution
+	//note we are using a flat vector with stride for our graph
+	std::uniform_real_distribution x_distr(0.0, 100.0);
+	std::uniform_real_distribution y_distr(0.0, 100.0);
+
 	for (int i = 0; i < m_num_nodes; i++) {
+		m_ref_graph.push_back(x_distr(m_rng));
+		m_ref_graph.push_back(y_distr(m_rng));
+	}
+
+
+	//uses the ref graph to construct a graph with distances
+	for (int i = 0; i < m_num_nodes; i++) {
+		double x1 = m_ref_graph[i * m_stride];
+		double y1 = m_ref_graph[i * m_stride + 1];
+
 		for (int j = 0; j < m_num_nodes; j++) {
-			auto [ixpos, iypos] = m_ref_graph[i];
-			auto [jxpos, jypos] = m_ref_graph[j];
-			float xpos = ixpos - jxpos;
-			float ypos = iypos - jypos;
-			xpos = xpos * xpos;
-			ypos = ypos * ypos;
 
+			double x2 = m_ref_graph[j * m_stride];
+			double y2 = m_ref_graph[j * m_stride + 1];
 
-			m_graph.push_back({ sqrtf(xpos + ypos), 1.0 });
+			double dist = sqrt(
+				pow(x1 - x2, 2.0)
+				+ pow(y1 - y2, 2.0)
+			);
+
+			m_graph.push_back(dist);
+			m_graph.push_back(0.0); // inits (dist, heuristic)
 		}
 	}
 
-	//quick checks
-	assert(m_ref_graph.size() == m_num_nodes);
-	assert(m_graph.size() == m_num_nodes * m_num_nodes);
+	assert(m_graph.size() == (m_stride * num_nodes * num_nodes));
 
-	//init ants at random location
-	std::uniform_int_distribution row_dist(0, m_num_nodes - 1);
-	for (int n = 0; n < num_ants; n++) {
-		m_ants.push_back({ row_dist(m_rng) });
+
+	//constructs a random set of orders, if none given we simply assign node 0
+	//as the pickup and destination as all others (TSP problem)
+	//note std::distr is inclusive hence we subtract 1
+	std::uniform_int_distribution order_distr(0, m_num_nodes - 1);
+	if (num_orders == -1) {
+		for (int i = 1; i < m_num_nodes; i++) {
+			m_orders.push_back({ 0, i });
+		}
 	}
-
-}
-
-std::pair<float, float> Env::getVal(int i, int j)
-{
-	assert(0 <= i && i < m_num_nodes); //!
-	assert(0 <= j && j < m_num_nodes); //!
-	return m_graph[(i * m_num_nodes) + j];
-}
-void Env::setVal(int i, int j, std::pair<float, float> val)
-{
-	assert(0 <= i && i < m_num_nodes); //!
-	assert(0 <= j && j < m_num_nodes); //!
-	m_graph[(i * m_num_nodes) + j] = val;
-}
-
-void Env::runACLoop()
-{
-	/*
-		Runs the loop for ant cololy optimization
-	*/
-	int counter = 0;
-	while (counter < m_num_steps) {
-		counter++;
-		processACState();
-		updateACState();
-	}
-
-}
-
-std::vector<std::pair<int, int>> Env::generateACO()
-{
-	/*
-		Returns the best path for the graph.
-	*/
-
-	// We generate best path by getting
-	//the minimum pheromone for each edge choice
-	std::vector<std::pair<int, int>> result;
-	std::set<int> to_visit;
-	int pos = 0;
-
-
-	for (int i = 1; i < m_num_nodes; i++) {
-		to_visit.insert(i);
-	}
-
-	while (!to_visit.empty()) {
-		float best = INFINITY;
-		int best_node = -1;
-		for (auto& node : to_visit) {
-			auto [dst, pher] = getVal(pos, node);
-			if (pher < best) {
-				best = pher;
-				best_node = node;
+	else {
+		for (int i = 0; i < num_orders; i++) {
+			int from = order_distr(m_rng);
+			int to = from;
+			while (to == from) {
+				to = order_distr(m_rng);
 			}
+			m_orders.push_back({ from, to });
 		}
-		to_visit.erase(best_node);
-		result.push_back({ pos, best_node });
-		pos = best_node;
 	}
-	return result;
+
 }
 
-float Env::getACDist()
+void Env::run_loop(int num_steps)
 {
-	/*
-		Utilizes the Ant Colony algorithm
-	*/
-	float result = 0;
-	std::set<int> to_visit;
-	int pos = 0;
-
-
-	for (int i = 1; i < m_num_nodes; i++) {
-		to_visit.insert(i);
+	// Not used...
+	// currently due to the variable nature of of heuristics it makes more sense
+	// to let the actor mutate the heuristic and then clear it
+	for (int i = 0; i < num_steps; i++) {
+		step_env();
 	}
-
-	while (!to_visit.empty()) {
-		float best = 0;
-		float best_dst = INFINITY;
-		int best_node = -1;
-		for (auto& node : to_visit) {
-			auto [dst, pher] = getVal(pos, node);
-			if (pher > best) {
-				best = pher;
-				best_dst = dst;
-				best_node = node;
-			}
-		}
-		to_visit.erase(best_node);
-		result += best_dst;
-		pos = best_node;
-	}
-	return result;
 }
 
-float Env::getBruteForceDist()
+void Env::step_env()
 {
-	/*
-		Simple brute force recursion
-	*/
-	std::set<int> to_visit;
-	int pos = 0;
-	float best = 1e10;
-
-	for (int i = 1; i < m_num_nodes; i++) {
-		to_visit.insert(i);
-	}
-
-	return getBruteForceDistBFS(to_visit, 0);
+	// Not used...
+	process_state();
+	update_state();
+	generate_output();
 }
 
-float Env::getBruteForceDistBFS(std::set<int>& to_visit, int cur_node)
+std::pair<double, double> Env::get_val(int i, int j)
 {
-	/*
-		Helper procedure
-	*/
-	if (to_visit.empty()) return 0.0;
-	float best = 1e10;
 
-	for (auto& node : to_visit) {
-		std::set<int> next_to_visit = to_visit;
-		next_to_visit.erase(node);
-		auto [dist, _] = getVal(cur_node, node);
-		float rest = getBruteForceDistBFS(next_to_visit, node);
-		best = fmin(best, dist + rest);
-	}
-	return best;
+	return { m_graph[(i * m_num_nodes * m_stride) + j * m_stride],
+		m_graph[(i * m_num_nodes * m_stride) + j * m_stride + 1] };
 }
 
-
-
-float Env::getNNDist(bool complex)
+void Env::set_val(int i, int j, std::pair<double, double> new_val)
 {
-	/*
-		Utilizes the nearest neighbors to find a solution, iterates over ALL
-		possible start points due to the cheapness of computation
-	*/
-
-	float best_result = 1e10;
-	int bound = m_num_nodes;
-	if (!complex) bound = 1;
-	for (int i = 0; i < 1; i++) {
-		std::set<int> to_visit;
-		int pos = 0;
-		float result = 0;
-
-		for (int i = 0; i < m_num_nodes; i++) {
-			if (i == pos) continue;
-			to_visit.insert(i);
-		}
-
-		while (!to_visit.empty()) {
-			float best = 1e10;
-			int best_node = -1;
-
-			for (auto& node : to_visit) {
-				auto [dst, _] = getVal(pos, node);
-				if (dst < best) {
-					best = dst;
-					best_node = node;
-				}
-
-			}
-			to_visit.erase(best_node);
-			result += best;
-			pos = best_node;
-		}
-
-		best_result = fmin(result, best_result);
-	}
-	return best_result;
-
+	m_graph[(i * m_num_nodes * m_stride) + j * m_stride] = new_val.first;
+	m_graph[(i * m_num_nodes * m_stride) + j * m_stride + 1] = new_val.second;
 }
 
-float Env::getOneAheadNNDist(bool complex)
+double Env::get_heuristic(int i, int j)
 {
-	/*
-		Like Nearest Neighbors but also searches one ahead
-		and chooses the minimum path
-
-	*/
-	float best_result = 1e10;
-	int bound = m_num_nodes;
-	if (!complex) bound = 1;
-	for (int i = 0; i < 1; i++) {
-		std::set<int> to_visit;
-		int pos = 0;
-		float result = 0;
-
-		for (int i = 0; i < m_num_nodes; i++) {
-			if (i == pos) continue;
-			to_visit.insert(i);
-		}
-
-		while (!to_visit.empty()) {
-			float stored_ahead = 0.0;
-			float best = 1e10;
-			int best_node = -1;
-
-			for (auto& node : to_visit) {
-				auto [dst, pher] = getVal(pos, node);
-				float ahead_best = 1e10;
-
-				for (auto& ahead_node : to_visit) {
-					if (ahead_node == node) continue;
-					auto [ahead_dst, _] = getVal(node, ahead_node);
-					if (ahead_dst < ahead_best) {
-						ahead_best = ahead_dst;
-					}
-				}
-				if (to_visit.size() == 1) ahead_best = 0.0;
-				if (dst + ahead_best < best) {
-					best = dst + ahead_best;
-					stored_ahead = ahead_best;
-					best_node = node;
-				}
-
-			}
-			to_visit.erase(best_node);
-			result += best - stored_ahead;
-			pos = best_node;
-		}
-		best_result = fmin(result, best_result);
-	}
-	return best_result;
+	return m_graph[(i * m_num_nodes * m_stride) + j * m_stride + 1];
 }
 
-float Env::getBBDist(float upper_bound_hint)
+void Env::set_heuristic(int i, int j, double new_heuristic_value)
 {
-	/*
-		Utilizes the branch and bound method for searching for an
-		optimal soulution
-
-		if an upper_bound hint is provided it will use that
-	*/
-
-	float upper_bound = getNNDist(false);
-	if (upper_bound_hint > 0.1) upper_bound = upper_bound_hint;
-	std::stack<int> cursor;
-	int pos = 0;
-	float result = 0;
-
-	std::set<int> to_visit;
-	for (int i = 1; i < m_num_nodes; i++) {
-		to_visit.insert(i);
-	}
-
-	float bb_dist = getBBDistDFS(to_visit, upper_bound, 0);
-	if (bb_dist < 0) assert(false);
-	return bb_dist;
+	m_graph[(i * m_num_nodes * m_stride) + j * m_stride + 1] = new_heuristic_value;
 }
 
-float Env::getBBDistDFS(std::set<int>& to_visit, float ub, int cur_node)
-{
-	/*
-		Helper procedure.
-	*/
-	if (to_visit.empty()) return 0.0;
-	if (ub < 0.0) return -1.0;
-
-	float best = 1e10;
-	for (auto node : to_visit) {
-		std::set<int> next_to_visit = to_visit;
-		next_to_visit.erase(node);
-		auto [dist, _] = getVal(cur_node, node);
-		float rest = getBBDistDFS(next_to_visit, ub - dist, node);
-		if (rest < 0.0) continue;
-		best = fmin(best, dist + rest);
-		ub = fmin(best, ub);
-	}
-
-	if (best > 1e9) return -1.0;
-	return best;
-}
-
-
-std::vector<std::pair<float, float>> Env::getRefGraph()
+std::vector<double>& Env::get_ref_graph()
 {
 	return m_ref_graph;
 }
 
-
-void Env::processACState()
+std::vector<double>& Env::get_graph()
 {
-	// Now we allow the ants to continue randomly choosing next steps
-	// We gather the pheromones and reweight them so that they add up to 1
-
-	std::uniform_int_distribution ant_next(0, m_num_nodes - 1);
-
-	for (auto& ant : m_ants) {
-		std::set<int> to_visit;
-		for (int i = 0; i < m_num_nodes; i++) {
-			if (i == ant.m_pos) continue;
-			else to_visit.insert(i);
-		}
-
-		while (!to_visit.empty()) {
-			std::uniform_real_distribution distr(0.0, 1.0);
-			std::vector<std::pair<int, float>> probs;
-			float total = 0.0;
-			float running_sum = 0.0;
-			float rand_num = distr(m_rng);
-			int chosen_node = -1;
-
-			for (auto& node : to_visit) {
-				float val = calculatePred(ant.m_pos, node);
-				total += val;
-				probs.push_back({ node, val });
-			}
-
-			for (auto& prob : probs) {
-				prob.second = prob.second / total;
-			}
-			for (auto& prob : probs) {
-
-				prob.second = prob.second + (float)running_sum;
-
-				if (rand_num <= prob.second) {
-					chosen_node = prob.first;
-					break;
-				};
-				running_sum = prob.second;
-			}
-
-
-			if (chosen_node == -1) {
-				// std::cout << running_sum << ", " << rand_num << "\t";
-				chosen_node = probs[probs.size() - 1].first;
-			}
-
-			to_visit.erase(chosen_node);
-			std::pair<int, int> edge = { ant.m_pos, chosen_node };
-			ant.m_visited.insert(edge);
-			ant.m_pos = chosen_node;
-		}
-
-		ant.m_pos = ant_next(m_rng);
-	}
-
+	return m_graph;
 }
 
-void Env::updateACState()
+void Env::clear_env()
 {
-	/*
-		updates the pheromones from the prcoessACState() iteration.
-	*/
+	m_ref_graph.clear();
+	m_graph.clear();
+	m_num_nodes = 0;
+	m_orders.clear();
+}
 
-	for (auto& ant : m_ants) {
-
-		// get the total distance of each ant's tour.
-		float total_dst = 0.0;
-		for (auto& edge : ant.m_visited) {
-			auto [dst, prev_val] = getVal(edge.first, edge.second);
-			total_dst += dst;
-		}
-
-
-		// local pheromone update
-		for (auto& edge : ant.m_visited) {
-			auto [dst, prev_val] = getVal(edge.first, edge.second);
-			setVal(edge.first, edge.second, { dst, prev_val + (1 / total_dst) });
-			setVal(edge.second, edge.first, { dst, prev_val + (1 / total_dst) });
-		}
-
-		//reset for next main loop iteration
-		ant.m_visited.clear();
-	}
-
-	//global uniform decay for all pheromone trails.
+void Env::reset_env()
+{
+	// only necessary to reset heuristic
 	for (int i = 0; i < m_num_nodes; i++) {
-		for (int j = 0; j < m_num_nodes; j++) {
-			auto [dst, prev_val] = getVal(i, j);
-			setVal(i, j, { dst, prev_val * PHER_DECA });
-		}
+		m_graph[i * m_stride + 1] = 0.0;
 	}
 }
 
-float Env::calculatePred(int from, int to)
+double Env::get_path_distance(std::vector<int> guess)
 {
-	/*
-	calcualtes the desirablity of an edge using Ant Coloy
-	*/
-	auto [dist, pher] = getVal(from, to);
-	dist = powf((1 / dist), DIST_PARAM);
-	pher = powf(pher, PHER_PARAM);
-	if (isnan(pher)) return 1e-5;
-	if (isnan(dist)) return 1e-5;
-	return (dist * pher);
+	// returns the distance travelled given a set of gueses
+	double result = 0.0;
+	for (int i = 1; i < guess.size(); i++) {
+		result += get_val(guess[i - 1], guess[i]).first;
+	}
+
+	return result;
+}
+
+std::vector<std::pair<int, int>>& Env::get_orders()
+{
+	return m_orders;
+}
+
+int Env::get_stride()
+{
+	return m_stride;
+}
+
+int Env::get_num_nodes()
+{
+	return m_num_nodes;
+}
+
+std::mt19937& Env::get_rng()
+{
+	return m_rng;
+}
+
+void Env::process_state()
+{
+
+}
+
+void Env::update_state()
+{
+
+}
+
+void Env::generate_output()
+{
+
 }
