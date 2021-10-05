@@ -7,7 +7,11 @@ DATA_DIR = "./data/prod/"
 
 def get_csv(file):
 	data_dir = pathlib.Path.joinpath(pathlib.Path.cwd(), DATA_DIR).resolve()
-	return pd.read_csv(data_dir / file, index_col="num_nodes")
+	df = pd.read_csv(data_dir / file, index_col="num_nodes")
+	df = df.rename({"NearestNeighbor_0_Ahead": "NearestNeighbor"}, axis = 1)
+
+	return df
+
 
 def create_graph(
 	input_df,
@@ -37,7 +41,7 @@ def main():
 	medium_dist_df = get_csv("medium_graph_dist.csv")\
 		.drop("RandomNeighbor", axis = 1)
 	motivation_dist_df = get_csv("medium_graph_dist.csv")\
-		[["NearestNeighbor_0_Ahead", "RandomNeighbor"]]
+		[["NearestNeighbor", "RandomNeighbor"]]
 
 	create_graph(
 		small_dist_df,
@@ -65,8 +69,6 @@ def main():
 		"Avg. Time (Million CPU Cycles)",
 		"medium_time")
 
-
-	print(medium_dist_df)
 
 
 if __name__ == "__main__":

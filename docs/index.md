@@ -70,6 +70,15 @@ informed selection.
 
 ### Possible Heuristics
 
+#### Branch and Bound
+
+This is an exact algorithm that prunes path's if they go above the best distance
+found already. The problem is if many of the distances are close enough you will
+devolve into a brute force search, given you cannot know the chances of pruning
+upfront this makes this method unreliable as a standard heuristic - but it is
+strictly superior alternative to calculating the exact distance. One could
+improve the average running time by improving the pruning of the possible paths.
+
 #### Nearest Neighbor
 The simplest possible (good) heuristic is continually picking the closest
 neighbor of our given node until we run out of options and then returning to our
@@ -115,9 +124,9 @@ alt="" width="600" height="400" />
   <img src="projects/optimization/figures/small_time.png"
 alt="" width="600" height="400" />
 
-Above we see that Brute Force and it's improvement Branch and Bound
-start becoming intractable at 10 nodes compared to our heuristics, hence solving
-this problem exactly is not feasible.
+Above we see that Brute Force and it's improvement Branch and Bound, , start becoming intractable at 12 nodes compared to our heuristics, hence solving
+this problem exactly is not feasible. Also note that Simulated Annealing was
+able to find the exact solutions on each test.
 
 
 ### Heuristic Comparison at Scale.

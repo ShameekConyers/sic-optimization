@@ -17,13 +17,14 @@ public:
 
 private:
 
-	std::vector<int> get_path_procedure(
+	void generate_path_procedure(
+		std::vector<int> current_path,
 		std::set<int> to_visit,
-		int current_node,
-		bool top_flag = false
+		int next_node
 	);
 
-	int counter;
+	std::vector<int> m_best_path;
+	double m_best_distance;
 };
 
 class BranchBoundTSP : public EnvHeuristic {
@@ -35,12 +36,15 @@ public:
 	std::vector<int> get_path();
 
 private:
-	std::vector<int> get_path_procedure(
+	void generate_path_procedure(
+		std::vector<int> current_path,
 		std::set<int> to_visit,
-		int current_node,
+		int next_node,
 		double bound_distance
 	);
 
 	std::unique_ptr<EnvHeuristic> m_initial_guess_heuristic;
 
+	std::vector<int> m_best_path;
+	double m_best_distance;
 };

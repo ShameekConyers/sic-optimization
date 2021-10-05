@@ -4,7 +4,8 @@
 BruteForceTSP::BruteForceTSP(Env& env)
 	: EnvHeuristic{ env, "BruteForceTSP" }
 {
-	counter = 0;
+	m_best_distance = INFINITY;
+	m_best_path = {};
 }
 
 std::vector<int> BruteForceTSP::get_path()
@@ -14,59 +15,41 @@ std::vector<int> BruteForceTSP::get_path()
 	for (int i = 0; i < m_num_nodes; i++) {
 		to_visit.insert(i);
 	}
-	double best_dist = INFINITY;
-	std::vector<int> best_path;
-	// for (auto node : to_visit) {
-	// 	auto path = get_path_procedure(to_visit, node, true);
-	// 	double path_dist = m_env->get_path_distance(path);
-	// 	if (path_dist < best_dist) {
-	// 		best_path = path;
-	// 	}
+
+	generate_path_procedure({}, to_visit, 0);
+
+	// auto path = m_best_path;
+	// std::cerr << "\n";
+	// for (auto node : path) {
+	// 	std::cerr << node << ", ";
 	// }
-	// for (auto node : best_path) {
-	// 	check.insert(node);
+	// std::cerr << "\n";
+	// for (int i = 1; i < path.size(); i++) {
+	// 	std::cerr << m_env->get_val(path[i - 1], path[i]).first << ", ";
 	// }
-	best_path = get_path_procedure(to_visit, 0, true);
-	// assert(check.size() == best_path.size() - 1);
-	// assert(best_path.front() == best_path.back());
-	// assert(best_path.size() == to_visit.size() + 1);
-	std::cerr << m_num_nodes << ", " << counter << "\n";
-	return best_path;
+	return m_best_path;
 }
 
-std::vector<int> BruteForceTSP::get_path_procedure(
-	std::set<int> to_visit, int current_node, bool top_flag
+void BruteForceTSP::generate_path_procedure(
+	std::vector<int> current_path, std::set<int> to_visit, int next_node
 )
 {
-	counter++;
-	if (to_visit.size() == 1) return { current_node };
-	double best_distance = INFINITY;
-	std::vector<int> best_path;
-	std::vector<int> path_tmp;
-	std::vector<int> path;
-
-
-	// Finds the best path from our current node to the rest of the nodes
-
-	to_visit.erase(current_node);
-	for (int node : to_visit) {
-
-		path_tmp = get_path_procedure(to_visit, node);
-
-		path = { current_node };
-		path.insert(path.end(), path_tmp.begin(), path_tmp.end());
-		if (top_flag) {
-			path.push_back(current_node);
+	current_path.push_back(next_node);
+	to_visit.erase(current_path.back());
+	if (to_visit.size() == 0) {
+		current_path.push_back(current_path.front());
+		double distance = m_env->get_path_distance(current_path);
+		if (distance < m_best_distance) {
+			m_best_path = current_path;
+			m_best_distance = distance;
 		}
-		double distance = m_env->get_path_distance(path);
-		if (distance < best_distance) {
-			best_path = path;
-			best_distance = distance;
+		return;
+	}
+	else {
+		for (int node : to_visit) {
+			generate_path_procedure(current_path, to_visit, node);
 		}
 	}
-	to_visit.insert(current_node);
-
-	return best_path;
 }
 
 BranchBoundTSP::BranchBoundTSP(Env& env)
@@ -74,67 +57,58 @@ BranchBoundTSP::BranchBoundTSP(Env& env)
 	m_initial_guess_heuristic{}
 {
 	m_initial_guess_heuristic = std::make_unique<NearestNeighbor>(env, 0);
+	m_best_distance = INFINITY;
+	m_best_path = {};
 }
 
 std::vector<int> BranchBoundTSP::get_path()
 {
-	auto [_1, _2, _3] = m_initial_guess_heuristic->get_results();
-	double bound_distance = _3.first;
-	std::vector<int> best_path;
+	std::vector<int> bound_path = m_initial_guess_heuristic->get_path();
+	double bound_distance = m_env->get_path_distance(bound_path);
+	m_best_distance = bound_distance;
+	m_best_path = bound_path;
+
 	std::set<int> check;
 	std::set<int> to_visit;
 	for (int i = 0; i < m_num_nodes; i++) {
 		to_visit.insert(i);
 	}
-	best_path = get_path_procedure(to_visit, 0, bound_distance);
-	for (auto node : best_path) {
+	generate_path_procedure({}, to_visit, 0, 0);
+	for (auto node : m_best_path) {
 		check.insert(node);
 	}
-	assert(best_path.size() == check.size() + 1);
+	assert(m_best_path.size() == check.size() + 1);
 	assert(check.size() == m_num_nodes);
-	return best_path;
+
+
+	return m_best_path;
 }
 
-std::vector<int> BranchBoundTSP::get_path_procedure(
+void BranchBoundTSP::generate_path_procedure(
+	std::vector<int> current_path,
 	std::set<int> to_visit,
-	int current_node,
-	double bound_distance
+	int next_node,
+	double path_distance
 )
 {
-	if (bound_distance < 0) return {};
-	if (to_visit.size() == 1) return { current_node };
+	if (path_distance > m_best_distance) return;
 
-	double best_distance = INFINITY;
-	double distance;
-	std::vector<int> best_path = {};
-	std::vector<int> tmp_path = {};
-	std::vector<int> path = {};
-
-
-	to_visit.erase(current_node);
-
-	// To get the best path out of all possible candidates to visit
-	for (int node : to_visit) {
-		double next_distance = bound_distance -
-			m_env->get_val(current_node, node).first;
-
-		// If unoptimal path continues, else prepares the path vector
-		path = { current_node };
-		tmp_path = get_path_procedure(to_visit, node, next_distance);
-		if (tmp_path.size() == 0) continue;
-		path.insert(path.end(), tmp_path.begin(), tmp_path.end());
-		if (current_node == 0) path.push_back(current_node);
-
-		// To update our bounded distance and best distance.
-		distance = m_env->get_path_distance(path);
-		if (distance <= best_distance) {
-			best_path = path;
-			best_distance = distance;
+	current_path.push_back(next_node);
+	to_visit.erase(current_path.back());
+	if (to_visit.size() == 0) {
+		current_path.push_back(current_path.front());
+		double distance = m_env->get_path_distance(current_path);
+		if (distance < m_best_distance) {
+			m_best_path = current_path;
+			m_best_distance = distance;
 		}
-		if (distance < bound_distance) {
-			bound_distance = distance;
+		return;
+	}
+	else {
+		for (int node : to_visit) {
+			double next_path_distance =
+				path_distance + m_env->get_val(next_node, node).first;
+			generate_path_procedure(current_path, to_visit, node, next_path_distance);
 		}
 	}
-
-	return best_path;
 }

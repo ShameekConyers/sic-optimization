@@ -120,14 +120,13 @@ public:
 		double time = m_timer.get_timer();
 
 		// assertions
-		assert((int)path.size() == m_env->get_num_nodes() + 1);
+		assert(path.size() == m_env->get_num_nodes() + 1);
 		assert(path.front() == path.back());
 		std::set<int> validator;
 		for (auto node : path) {
 			validator.insert(node);
 		}
 		assert(validator.size() + 1 == path.size());
-
 		return { distance, time };
 	}
 

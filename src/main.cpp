@@ -27,7 +27,7 @@ int main()
 	HeuristicDataHandler data_handler{};
 
 	std::cout << "Small Graph Started" << "...\n";
-	for (int num_nodes = 2; num_nodes <= 10; num_nodes++) {
+	for (int num_nodes = 2; num_nodes <= 12; num_nodes++) {
 		std::cout << num_nodes << "...\n";
 		for (int scenario = 0; scenario < 30; scenario++) {
 			env.clear_env();
@@ -80,4 +80,31 @@ int main()
 		}
 	}
 	data_handler.dump_results("medium_graph", PROD_DIR);
+
+	std::cout << "Large Graph Started" << "...\n";
+	for (int num_nodes = 2; num_nodes <= 50; num_nodes = num_nodes + 1) {
+		std::cout << num_nodes << "...\n";
+		for (int scenario = 0; scenario < 30; scenario++) {
+			env.clear_env();
+			env.initialize_env(num_nodes, scenario);
+			std::vector<EnvHeuristic*> heuristic_vec;
+			AntSystem ant_system{ env };
+			SimulatedAnnealing simulated_annealing{ env };
+			NearestNeighbor one_ahead{ env, 0 };
+			RandomNeighbor random_neighbor{ env };
+
+			heuristic_vec = {
+				&ant_system,
+				&simulated_annealing,
+				&one_ahead,
+				&random_neighbor,
+			};
+
+
+			for (int i = 0; i < heuristic_vec.size(); i++) {
+				data_handler.append_results(heuristic_vec[i]);
+			}
+		}
+	}
+	data_handler.dump_results("large_graph", PROD_DIR);
 }

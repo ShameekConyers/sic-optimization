@@ -96,106 +96,111 @@ TEST_CASE("Env")
 	Env env{};
 	HeuristicDataHandler data_handler{};
 
-	SECTION("Simple")
+	// SECTION("Simple")
+	// {
+	// 	clean_dir();
+	// 	for (int num_nodes = 2; num_nodes < 4; num_nodes++) {
+
+	// 		env.clear_env();
+	// 		env.initialize_env(num_nodes, 0);
+	// 		std::vector<EnvHeuristic*> heuristic_vec;
+	// 		AntSystem ant_system{ env };
+	// 		AntColonySystem ant_colony_system{ env };
+	// 		NearestNeighbor one_ahead{ env, 0 };
+	// 		NearestNeighbor two_ahead{ env, 1 };
+	// 		NearestNeighbor three_ahead{ env, 2 };
+	// 		BruteForceTSP brute_force_tsp{ env };
+	// 		BranchBoundTSP branch_bound_tsp{ env };
+
+	// 		heuristic_vec = {
+	// 			&ant_system,
+	// 			&ant_colony_system,
+	// 			&one_ahead,
+	// 			&two_ahead,
+	// 			&three_ahead,
+	// 			&brute_force_tsp,
+	// 			&branch_bound_tsp
+	// 		};
+
+
+	// 		for (int i = 0; i < heuristic_vec.size(); i++) {
+	// 			data_handler.append_results(heuristic_vec[i]);
+	// 		}
+	// 	}
+	// 	data_handler.dump_results("test", TEST_DIR);
+	// }
+
+	SECTION("Aggregate_Simple")
 	{
 		clean_dir();
-		for (int num_nodes = 2; num_nodes < 3; num_nodes++) {
 
-			env.clear_env();
-			env.initialize_env(num_nodes, 0);
-			std::vector<EnvHeuristic*> heuristic_vec;
-			AntSystem ant_system{ env };
-			AntColonySystem ant_colony_system{ env };
-			NearestNeighbor one_ahead{ env, 0 };
-			NearestNeighbor two_ahead{ env, 1 };
-			NearestNeighbor three_ahead{ env, 2 };
-			BruteForceTSP brute_force_tsp{ env };
-			BranchBoundTSP branch_bound_tsp{ env };
+		for (int num_nodes = 2; num_nodes < 9; num_nodes++) {
+			for (int scenario = 4; scenario < 5; scenario++) {
+				env.clear_env();
+				env.initialize_env(num_nodes, scenario);
+				std::vector<EnvHeuristic*> heuristic_vec;
+				AntSystem ant_system{ env };
+				AntColonySystem ant_colony_system{ env };
+				NearestNeighbor one_ahead{ env, 0 };
+				NearestNeighbor two_ahead{ env, 1 };
+				NearestNeighbor three_ahead{ env, 2 };
+				RandomNeighbor random_neighbor{ env };
+				FarthestNeighbor farthest_neighbor{ env };
+				BruteForceTSP brute_force_tsp{ env };
+				BranchBoundTSP branch_bound_tsp{ env };
+				SimulatedAnnealing simulated_anneal{ env };
 
-			heuristic_vec = {
-				&ant_system,
-				&ant_colony_system,
-				&one_ahead,
-				&two_ahead,
-				&three_ahead,
-				&brute_force_tsp,
-				&branch_bound_tsp
-			};
+				heuristic_vec = {
+					&ant_system,
+					&ant_colony_system,
+					&one_ahead,
+					&two_ahead,
+					&random_neighbor,
+					&farthest_neighbor,
+					&three_ahead,
+					&brute_force_tsp,
+					&branch_bound_tsp,
+					&simulated_anneal
+				};
 
 
-			for (int i = 0; i < heuristic_vec.size(); i++) {
-				data_handler.append_results(heuristic_vec[i]);
+				for (int i = 0; i < heuristic_vec.size(); i++) {
+					data_handler.append_results(heuristic_vec[i]);
+				}
 			}
 		}
 		data_handler.dump_results("test", TEST_DIR);
 	}
 
-	// SECTION("Aggregate_Simple")
-	// {
-	// 	clean_dir();
+	SECTION("Aggregate_Complex")
+	{
+		clean_dir();
 
-	// 	for (int num_nodes = 2; num_nodes < 9; num_nodes++) {
-	// 		for (int scenario = 4; scenario < 5; scenario++) {
-	// 			env.clear_env();
-	// 			env.initialize_env(num_nodes, scenario);
-	// 			std::vector<EnvHeuristic*> heuristic_vec;
-	// 			AntSystem ant_system{ env };
-	// 			AntColonySystem ant_colony_system{ env };
-	// 			NearestNeighbor one_ahead{ env, 0 };
-	// 			NearestNeighbor two_ahead{ env, 1 };
-	// 			NearestNeighbor three_ahead{ env, 2 };
-	// 			RandomNeighbor random_neighbor{ env };
-	// 			FarthestNeighbor farthest_neighbor{ env };
-	// 			BruteForceTSP brute_force_tsp{ env };
-	// 			BranchBoundTSP branch_bound_tsp{ env };
-	// 			SimulatedAnnealing simulated_anneal{ env };
+		for (int num_nodes = 10; num_nodes <= 30; num_nodes = num_nodes + 10) {
+			for (int scenario = 0; scenario < 10; scenario++) {
+				env.clear_env();
+				env.initialize_env(num_nodes, scenario);
+				std::vector<EnvHeuristic*> heuristic_vec;
 
-	// 			heuristic_vec = {
-	// 				&ant_system,
-	// 				&ant_colony_system,
-	// 				&one_ahead,
-	// 				&two_ahead,
-	// 				&random_neighbor,
-	// 				&farthest_neighbor,
-	// 				&three_ahead,
-	// 				&brute_force_tsp,
-	// 				&branch_bound_tsp,
-	// 				&simulated_anneal
-	// 			};
+				SimulatedAnnealing sim_anneal{ env };
+				AntSystem ant_system{ env };
+				AntColonySystem ant_colony_system{ env };
+				NearestNeighbor one_ahead{ env, 0 };
+
+				heuristic_vec = {
+					&sim_anneal,
+					&ant_system,
+					&ant_colony_system,
+					&one_ahead,
+				};
 
 
-	// 			for (int i = 0; i < heuristic_vec.size(); i++) {
-	// 				data_handler.append_results(heuristic_vec[i]);
-	// 			}
-	// 		}
-	// 	}
-	// 	data_handler.dump_results("test", TEST_DIR);
-	// }
-
-	// SECTION("Aggregate_Complex")
-	// {
-	// 	clean_dir();
-
-	// 	for (int num_nodes = 20; num_nodes <= 50; num_nodes = num_nodes + 10) {
-	// 		for (int scenario = 0; scenario < 30; scenario++) {
-	// 			env.clear_env();
-	// 			env.initialize_env(num_nodes, scenario);
-	// 			std::vector<EnvHeuristic*> heuristic_vec;
-	// 			NearestNeighbor one_ahead{ env, 0 };
-	// 			SimulatedAnnealing sim_anneal{ env };
-
-	// 			heuristic_vec = {
-	// 				&sim_anneal,
-	// 				&one_ahead,
-	// 			};
-
-
-	// 			for (int i = 0; i < heuristic_vec.size(); i++) {
-	// 				data_handler.append_results(heuristic_vec[i]);
-	// 			}
-	// 		}
-	// 	}
-	// 	data_handler.dump_results("test", TEST_DIR);
-	// }
+				for (int i = 0; i < heuristic_vec.size(); i++) {
+					data_handler.append_results(heuristic_vec[i]);
+				}
+			}
+		}
+		data_handler.dump_results("test", TEST_DIR);
+	}
 
 }

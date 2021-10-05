@@ -47,10 +47,14 @@ std::vector<int> SimulatedAnnealing::get_path()
 
 		temperature = temperature * temp_decay_param;
 	}
-	for (auto node : path) {
-		std::cerr << node << ", ";
-	}
-	std::cerr << "\n";
+	// std::cerr << "\n";
+	// for (auto node : path) {
+	// 	std::cerr << node << ", ";
+	// }
+	// std::cerr << "\n";
+	// for (int i = 1; i < path.size(); i++) {
+	// 	std::cerr << m_env->get_val(path[i - 1], path[i]).first << ", ";
+	// }
 	return path;
 }
 
@@ -159,7 +163,6 @@ void SimulatedAnnealing::transport_segment_(
 		new_path.insert(
 			new_path.end(), path.begin() + new_start, path.end());
 	}
-	// std::cerr << new_path.size() << ", " << path.size() << "\n";
 	assert(new_path.size() == path.size());
 	path = new_path;
 }
