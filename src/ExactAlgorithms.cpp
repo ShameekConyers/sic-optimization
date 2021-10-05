@@ -4,7 +4,7 @@
 BruteForceTSP::BruteForceTSP(Env& env)
 	: EnvHeuristic{ env, "BruteForceTSP" }
 {
-
+	counter = 0;
 }
 
 std::vector<int> BruteForceTSP::get_path()
@@ -14,19 +14,31 @@ std::vector<int> BruteForceTSP::get_path()
 	for (int i = 0; i < m_num_nodes; i++) {
 		to_visit.insert(i);
 	}
-	auto path = get_path_procedure(to_visit, 0);
-	for (auto node : path) {
-		check.insert(node);
-	}
-	assert(check.size() == path.size() - 1);
-	assert(path.front() == path.back());
-	assert(path.size() == to_visit.size() + 1);
-	return path;
+	double best_dist = INFINITY;
+	std::vector<int> best_path;
+	// for (auto node : to_visit) {
+	// 	auto path = get_path_procedure(to_visit, node, true);
+	// 	double path_dist = m_env->get_path_distance(path);
+	// 	if (path_dist < best_dist) {
+	// 		best_path = path;
+	// 	}
+	// }
+	// for (auto node : best_path) {
+	// 	check.insert(node);
+	// }
+	best_path = get_path_procedure(to_visit, 0, true);
+	// assert(check.size() == best_path.size() - 1);
+	// assert(best_path.front() == best_path.back());
+	// assert(best_path.size() == to_visit.size() + 1);
+	std::cerr << m_num_nodes << ", " << counter << "\n";
+	return best_path;
 }
 
 std::vector<int> BruteForceTSP::get_path_procedure(
-	std::set<int> to_visit, int current_node)
+	std::set<int> to_visit, int current_node, bool top_flag
+)
 {
+	counter++;
 	if (to_visit.size() == 1) return { current_node };
 	double best_distance = INFINITY;
 	std::vector<int> best_path;
@@ -43,7 +55,7 @@ std::vector<int> BruteForceTSP::get_path_procedure(
 
 		path = { current_node };
 		path.insert(path.end(), path_tmp.begin(), path_tmp.end());
-		if (current_node == 0) {
+		if (top_flag) {
 			path.push_back(current_node);
 		}
 		double distance = m_env->get_path_distance(path);
@@ -59,14 +71,14 @@ std::vector<int> BruteForceTSP::get_path_procedure(
 
 BranchBoundTSP::BranchBoundTSP(Env& env)
 	: EnvHeuristic{ env,  "BranchBoundTSP" },
-	m_bound_heuristic{}
+	m_initial_guess_heuristic{}
 {
-	m_bound_heuristic = std::make_unique<NearestNeighbor>(env, 3);
+	m_initial_guess_heuristic = std::make_unique<NearestNeighbor>(env, 0);
 }
 
 std::vector<int> BranchBoundTSP::get_path()
 {
-	auto [_1, _2, _3] = m_bound_heuristic->get_results();
+	auto [_1, _2, _3] = m_initial_guess_heuristic->get_results();
 	double bound_distance = _3.first;
 	std::vector<int> best_path;
 	std::set<int> check;
@@ -83,7 +95,11 @@ std::vector<int> BranchBoundTSP::get_path()
 	return best_path;
 }
 
-std::vector<int> BranchBoundTSP::get_path_procedure(std::set<int> to_visit, int current_node, double bound_distance)
+std::vector<int> BranchBoundTSP::get_path_procedure(
+	std::set<int> to_visit,
+	int current_node,
+	double bound_distance
+)
 {
 	if (bound_distance < 0) return {};
 	if (to_visit.size() == 1) return { current_node };

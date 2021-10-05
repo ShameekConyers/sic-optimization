@@ -28,14 +28,14 @@ public:
 		double distance_parameter = AS_DISTANCE_PARAM
 	);
 
-	void run_loop(
-		int num_steps = 0
-	);
-
 	//returns the chosen optimal edge traversal
 	std::vector<int> get_path();
 
 private:
+	void run_loop(
+		int num_steps = 0
+	);
+
 	// does 1 step on env
 	void process_step();
 

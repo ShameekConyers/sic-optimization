@@ -11,10 +11,10 @@ add_executable(sic_optim)
 add_executable(sic_optim_test)
 target_sources(sic_optim PRIVATE src/Utils.cpp src/main.cpp
 	src/Env.cpp src/AntSystem.cpp src/NearestNeighbor.cpp src/ExactAlgorithms.cpp
-	src/AntColonySystem.cpp)
+	src/AntColonySystem.cpp src/SimulatedAnnealing.cpp)
 target_sources(sic_optim_test PRIVATE src/Utils.cpp tests/main_test.cpp
 	src/Env.cpp src/AntSystem.cpp src/NearestNeighbor.cpp src/ExactAlgorithms.cpp
-	src/AntColonySystem.cpp)
+	src/AntColonySystem.cpp src/SimulatedAnnealing.cpp)
 
 add_test(NAME sic_optim_test COMMAND sic_optim_test)
 set(CMAKE_CXX_FLAGS "-O3")

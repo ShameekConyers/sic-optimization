@@ -37,7 +37,7 @@ def main():
 	medium_dist_df = get_csv("medium_graph_dist.csv")\
 		.drop("RandomNeighbor", axis = 1)
 	motivation_dist_df = get_csv("medium_graph_dist.csv")\
-		.drop("AntSystem", axis = 1)
+		[["NearestNeighbor_0_Ahead", "RandomNeighbor"]]
 
 	create_graph(
 		small_dist_df,
@@ -53,7 +53,7 @@ def main():
 		motivation_dist_df,
 		"Heuristic Distance Comparison",
 		"Avg. Distance of Solution",
-		"motviation_dist")
+		"motivation_dist")
 	create_graph(
 		medium_dist_df,
 		"Heuristic Distance Comparison",

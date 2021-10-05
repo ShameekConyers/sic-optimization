@@ -10,6 +10,7 @@
 #include "../src/HeuristicDataHandler.hpp"
 #include "../src/NearestNeighbor.hpp"
 #include "../src/ExactAlgorithms.hpp"
+#include "../src/SimulatedAnnealing.hpp"
 
 
 const std::string PROD_DIR = "../data/prod/";
@@ -33,12 +34,14 @@ int main()
 			env.initialize_env(num_nodes, scenario);
 			std::vector<EnvHeuristic*> heuristic_vec;
 			AntSystem ant_system{ env };
+			SimulatedAnnealing simulated_annealing{ env };
 			NearestNeighbor one_ahead{ env, 0 };
 			BruteForceTSP brute_force_tsp{ env };
 			BranchBoundTSP branch_bound_tsp{ env };
 
 			heuristic_vec = {
 				&ant_system,
+				&simulated_annealing,
 				&one_ahead,
 				&brute_force_tsp,
 				&branch_bound_tsp
@@ -59,11 +62,13 @@ int main()
 			env.initialize_env(num_nodes, scenario);
 			std::vector<EnvHeuristic*> heuristic_vec;
 			AntSystem ant_system{ env };
+			SimulatedAnnealing simulated_annealing{ env };
 			NearestNeighbor one_ahead{ env, 0 };
 			RandomNeighbor random_neighbor{ env };
 
 			heuristic_vec = {
 				&ant_system,
+				&simulated_annealing,
 				&one_ahead,
 				&random_neighbor,
 			};

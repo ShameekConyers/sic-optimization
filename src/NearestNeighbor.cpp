@@ -5,7 +5,7 @@
 NearestNeighbor::NearestNeighbor(
 	Env& env, int num_ahead
 )
-	: EnvHeuristic{ env, "NN_" + std::to_string(num_ahead) + "_Ahead" },
+	: EnvHeuristic{ env, "NearestNeighbor_" + std::to_string(num_ahead) + "_Ahead" },
 	m_num_ahead{ num_ahead }
 {
 

@@ -7,6 +7,8 @@
 #include <memory>
 #include <string>
 #include "Utils.hpp"
+#include <iostream>
+#include <set>
 
 class Timer;
 
@@ -113,8 +115,19 @@ public:
 	std::pair<double, double> get_performance()
 	{
 		m_timer.set_timer();
-		double distance = m_env->get_path_distance(get_path());
+		std::vector<int> path = get_path();
+		double distance = m_env->get_path_distance(path);
 		double time = m_timer.get_timer();
+
+		// assertions
+		assert((int)path.size() == m_env->get_num_nodes() + 1);
+		assert(path.front() == path.back());
+		std::set<int> validator;
+		for (auto node : path) {
+			validator.insert(node);
+		}
+		assert(validator.size() + 1 == path.size());
+
 		return { distance, time };
 	}
 
@@ -135,11 +148,6 @@ protected:
 	Timer m_timer;
 };
 
-
-// class driver for the Simulated Annealing algorithm
-class SimulatedAnnealing {
-
-};
 
 // class driver for the Genetic algorithm
 class GeneticAlgorithm {

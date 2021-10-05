@@ -16,7 +16,10 @@ Source code can be found <a href
 
 ## Preliminaries
 
-- All tests are preformed with a sample size of 30,
+- All tests are preformed with a sample size of 30
+- Implementation of algorithms follows the canonical one found on Wikipedia
+  , unless stated otherwise.
+- Source Code has assertions that make sure every solution is valid
 
 ---
 
@@ -36,7 +39,7 @@ An example of a real world scenario is suppose you run a logistics company where
 you have to ship  morning packages to $n$ number of customers every morning. Of
 course, as a profit maximizing firm it is imperative for you to find the shortest
 distance to cut down on gas expenditure, billed driver hours, and to increase
-client satisfaction. One could adjust modify the distance to account for speed
+client satisfaction. One could modify the distance function to account for speed
 limits, traffic, etc easily allowing extensibility.
 
 The first thought would be to just take $X$ and try every permutation of
@@ -57,6 +60,7 @@ Suppose you see the problem starts to become intractable after you reach only 10
 nodes and you decide to just randomly pick nodes to travel to instead.
 Below is a comparison between random picking vs the simplest heuristic out
 there: simply picking the closest node to travel to.
+
 <img src="projects/optimization/figures/motivation_dist.png"
 alt="" width="600" height="400" />
 
@@ -66,10 +70,17 @@ informed selection.
 
 ### Possible Heuristics
 
+#### Nearest Neighbor
 The simplest possible (good) heuristic is continually picking the closest
 neighbor of our given node until we run out of options and then returning to our
 start node. This is a fast implementation that on average finds a solution only
-25% worse than the optimal solution. An interesting alternative is called the
+25% worse than the optimal solution. Given how fast this algorithm is it is
+phenomenal at using as an initial guess for other heuristics. One could also
+try to optimize this algorithm by looking ahead and having some discount future
+function.
+
+#### Ant System
+An interesting alternative is called the
 Ant System algorithm and it's derivative implementations. The Ant System is
 a learning algorithm that tries to mimic biological optimization used by ants.
 Given a collection of nodes $X$ the corresponding weighted edges also have
@@ -82,13 +93,26 @@ of that given edge. $H(p, d)$. In effect this means after a given number of
 iterations better solutions will be selected for and bad solutions will be
 pruned.
 
+#### Simulated Annealing
+
+Simulated Annealing works by traversing state space to try and
+find the global minimum of some goal function, In our case we are looking to
+minimize the distance a tour will take. To traverse the state space one finds
+some sort of state transition for our current state and given an acceptance
+function we decide to accept this transition or not. This acceptance function
+is informed by a parameter called "temperature" which decays, such that we
+accept worse solutions less as time goes on. We always accept a better solution
+than our current one. For our implementation our state transition function is
+defined by selecting a random segment of our tour and then allowing two
+operations: reverse and splice. reverse simply reverses the segment in place
+while splice takes the segment and puts it into another portion of our path.
+
 #### Comparison vs Exact
 
-
-<img src="projects/optimization/figures/small_dist.png"
+  <img src="projects/optimization/figures/small_dist.png"
 alt="" width="600" height="400" />
 
-<img src="projects/optimization/figures/small_time.png"
+  <img src="projects/optimization/figures/small_time.png"
 alt="" width="600" height="400" />
 
 Above we see that Brute Force and it's improvement Branch and Bound
@@ -96,15 +120,15 @@ start becoming intractable at 10 nodes compared to our heuristics, hence solving
 this problem exactly is not feasible.
 
 
-#### Nearest Neighbor vs Ant System
+### Heuristic Comparison at Scale.
 
-
-<img src="projects/optimization/figures/medium_dist.png"
+  <img src="projects/optimization/figures/medium_dist.png"
 alt="" width="600" height="400" />
 
 
-<img src="projects/optimization/figures/medium_time.png"
+  <img src="projects/optimization/figures/medium_time.png"
 alt="" width="600" height="400" />
+
 
 Above we see that while the Ant System always performs better than the Neighbor
 in finding an optimal solution as density increases the time to compute
@@ -112,5 +136,11 @@ the solution doubles roughly every 10 additional nodes. This implies the
 time complexity $O'(n) = cn$ and hence $O(n) = cn^2$ where $c$ is an arbitrary
 constant such that $c \in R^+$. While this is substantially better than $O(n) =
 cn!$ for the exact algorithm it starts to become unfeasible as $n \rarr \infty$.
-Hence we can suppose that a learning heuristic such as the Ant System could be
-useful as an alternative in an optimization problem.
+While we can suppose that a learning heuristic such as the Ant System could be
+useful as an alternative in an optimization problem, our implementation
+of Simulated Annealing seems to only increase linearly in time giving us $O(n)=cn$
+which is much better especially as time goes on. Furthermore, we can also see
+Simulated Annealing performs much better than the other two heuristics and hence
+we can see the this would be the preferred heuristic to use, especially since
+it can be generalized to any optimization problem which you can boil down to
+traversing a state space where you can be informed by a loss function.

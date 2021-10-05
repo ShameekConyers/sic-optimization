@@ -12,7 +12,7 @@
 #include "../src/HeuristicDataHandler.hpp"
 #include "../src/NearestNeighbor.hpp"
 #include "../src/ExactAlgorithms.hpp"
-
+#include "../src/SimulatedAnnealing.hpp"
 
 const std::string TEST_DIR = "../data/test/";
 void clean_dir(std::string directory = TEST_DIR)
@@ -99,7 +99,7 @@ TEST_CASE("Env")
 	SECTION("Simple")
 	{
 		clean_dir();
-		for (int num_nodes = 2; num_nodes < 12; num_nodes++) {
+		for (int num_nodes = 2; num_nodes < 3; num_nodes++) {
 
 			env.clear_env();
 			env.initialize_env(num_nodes, 0);
@@ -134,8 +134,8 @@ TEST_CASE("Env")
 	{
 		clean_dir();
 
-		for (int num_nodes = 2; num_nodes < 8; num_nodes++) {
-			for (int scenario = 0; scenario < 5; scenario++) {
+		for (int num_nodes = 2; num_nodes < 9; num_nodes++) {
+			for (int scenario = 4; scenario < 5; scenario++) {
 				env.clear_env();
 				env.initialize_env(num_nodes, scenario);
 				std::vector<EnvHeuristic*> heuristic_vec;
@@ -148,6 +148,7 @@ TEST_CASE("Env")
 				FarthestNeighbor farthest_neighbor{ env };
 				BruteForceTSP brute_force_tsp{ env };
 				BranchBoundTSP branch_bound_tsp{ env };
+				SimulatedAnnealing simulated_anneal{ env };
 
 				heuristic_vec = {
 					&ant_system,
@@ -158,7 +159,8 @@ TEST_CASE("Env")
 					&farthest_neighbor,
 					&three_ahead,
 					&brute_force_tsp,
-					&branch_bound_tsp
+					&branch_bound_tsp,
+					&simulated_anneal
 				};
 
 
@@ -179,18 +181,12 @@ TEST_CASE("Env")
 	// 			env.clear_env();
 	// 			env.initialize_env(num_nodes, scenario);
 	// 			std::vector<EnvHeuristic*> heuristic_vec;
-	// 			AntSystem ant_system{ env };
-	// 			AntColonySystem ant_colony_system{ env };
 	// 			NearestNeighbor one_ahead{ env, 0 };
-	// 			NearestNeighbor two_ahead{ env, 1 };
-	// 			FarthestNeighbor farthest_neighbor{ env };
+	// 			SimulatedAnnealing sim_anneal{ env };
 
 	// 			heuristic_vec = {
-	// 				&ant_system,
-	// 				// &ant_colony_system,
+	// 				&sim_anneal,
 	// 				&one_ahead,
-	// 				&two_ahead,
-	// 				&farthest_neighbor
 	// 			};
 
 
