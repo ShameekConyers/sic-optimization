@@ -43,6 +43,9 @@ def main():
 	motivation_dist_df = get_csv("medium_graph_dist.csv")\
 		[["NearestNeighbor", "RandomNeighbor"]]
 
+	large_time_df = get_csv("large_graph_time.csv")
+	large_dist_df = get_csv("large_graph_dist.csv")
+
 	create_graph(
 		small_dist_df,
 		"Heuristic Distance Comparison",
@@ -68,6 +71,16 @@ def main():
 		"Heuristic Time Comparison",
 		"Avg. Time (Million CPU Cycles)",
 		"medium_time")
+	create_graph(
+		large_dist_df,
+		"Simulated Annealing Time at Scale",
+		"Avg. Time (Million CPU Cycles)",
+		"large_time")
+	create_graph(
+		large_time_df,
+		"Simulated Annealing Distance at Scale",
+		"Avg. Distance of Solution",
+		"large_distance")
 
 
 
