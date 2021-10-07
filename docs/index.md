@@ -156,7 +156,7 @@ could be useful as an alternative in an optimization problem.
 
 ### Simulated Annealing at Scale
 
-<img src="/projects/optimization/figures/large_time.png"
+<img src="/projects/optimization/figures/large_dist.png"
 alt="" width="600" height="400" />
 
 <img src="/projects/optimization/figures/large_time.png"

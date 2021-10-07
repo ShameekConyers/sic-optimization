@@ -80,7 +80,7 @@ def main():
 		large_dist_df,
 		"Simulated Annealing Distance at Scale",
 		"Avg. Distance of Solution",
-		"large_distance")
+		"large_dist")
 
 
 
