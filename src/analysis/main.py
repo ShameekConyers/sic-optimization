@@ -72,12 +72,12 @@ def main():
 		"Avg. Time (Million CPU Cycles)",
 		"medium_time")
 	create_graph(
-		large_dist_df,
+		large_time_df,
 		"Simulated Annealing Time at Scale",
 		"Avg. Time (Million CPU Cycles)",
 		"large_time")
 	create_graph(
-		large_time_df,
+		large_dist_df,
 		"Simulated Annealing Distance at Scale",
 		"Avg. Distance of Solution",
 		"large_distance")
